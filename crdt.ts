@@ -65,10 +65,11 @@ function localInsert(doc: Doc, agent: string, pos: number, text: string) {
   }
 }
 
-
 function remoteInsert(doc: Doc, item: Item) {
   integrate(doc, item)
 }
+
+
 
 const idEq = (a: Id | null, b: Id | null): boolean => (
   a == b || (a != null && b != null && a[0] === b[0] && a[1] === b[1])
@@ -149,10 +150,77 @@ function integrate(doc: Doc, newItem: Item) {
   // if (!newItem.deleted) doc.length += 1
 }
 
+function isInVersion(id: Id | null, version: Version): boolean {
+  if (id == null) return true
+  const [agent, seq] = id
+  const highestSeq = version[agent]
+  if (highestSeq == null) {
+    return false
+  } else {
+    return highestSeq >= seq
+  }
 
-const doc = createDoc()
-localInsertOne(doc, 'seph', 0, 'a')
-localInsertOne(doc, 'seph', 1, 'b')
-localInsertOne(doc, 'seph', 0, 'c')
-console.log('doc has content', getContent(doc))
-console.table(doc.content)
+  // return highestSeq != null && highestSeq >= seq
+}
+
+function canInsertNow(item: Item, doc: Doc): boolean {
+  // We need op.id to not be in doc.versions, but originLeft and originRight to be in.
+  // We're also inserting each item from each agent in sequence.
+  const [agent, seq] = item.id
+  return !isInVersion(item.id, doc.version)
+    && (seq === 0 || isInVersion([agent, seq - 1], doc.version))
+    && isInVersion(item.originLeft, doc.version)
+    && isInVersion(item.originRight, doc.version)
+}
+
+function mergeInto(dest: Doc, src: Doc) {
+  const missing: (Item | null)[] = src.content.filter(item => !isInVersion(item.id, dest.version))
+  let remaining = missing.length
+
+  while (remaining > 0) {
+    // Find the next item in remaining and insert it.
+    let mergedOnThisPass = 0
+
+    for (let i = 0; i < missing.length; i++) {
+      const item = missing[i]
+      if (item == null) continue
+      if (!canInsertNow(item, dest)) continue
+
+      // Insert it.
+      remoteInsert(dest, item)
+      missing[i] = null
+      remaining--
+      mergedOnThisPass++
+    }
+
+    if (mergedOnThisPass === 0) throw Error('Not making progress')
+  }
+}
+
+
+const doc1 = createDoc()
+const doc2 = createDoc()
+
+localInsert(doc1, 'a', 0, 'A')
+localInsert(doc2, 'b', 0, 'B')
+
+mergeInto(doc1, doc2)
+mergeInto(doc2, doc1)
+
+console.log('doc1 has content', getContent(doc1))
+console.log('doc2 has content', getContent(doc2))
+
+
+
+// localInsertOne(doc1, 'seph', 0, 'a')
+// mergeInto(doc2, doc1)
+
+// localInsertOne(doc1, 'seph', 1, 'b')
+// localInsertOne(doc1, 'seph', 0, 'c')
+// console.log('doc1 has content', getContent(doc1))
+// console.table(doc1.content)
+
+// mergeInto(doc2, doc1)
+// console.log('doc2 has content', getContent(doc2))
+
+// console.table(doc2.content)
