@@ -41,19 +41,38 @@ function getContent(doc: Doc): string {
   return content
 }
 
+// Find the index of the item at the specified content position in the document.
+const findItemAtPos = (doc: Doc, pos: number, stickEnd: boolean = false): number => {
+  let i = 0
+  // console.log('pos', pos, doc.length, doc.content.length)
+  for (; i < doc.content.length; i++) {
+    const item = doc.content[i]
+    if (stickEnd && pos === 0) return i
+    else if (item.deleted) continue
+    else if (pos === 0) return i
+
+    pos--
+  }
+
+  if (pos === 0) return i
+  else throw Error('past end of the document')
+}
+
 function localInsertOne(doc: Doc, agent: string, pos: number, text: string) {
   // let seq = 0
   // if (doc.version[agent] != null) {
   //   seq = doc.version[agent] + 1
   // }
 
+  const idx = findItemAtPos(doc, pos, true)
+
   const seq = (doc.version[agent] ?? -1) + 1
   integrate(doc, {
     content: text,
     id: [agent, seq],
     deleted: false,
-    originLeft: doc.content[pos - 1]?.id ?? null,
-    originRight: doc.content[pos]?.id ?? null,
+    originLeft: doc.content[idx - 1]?.id ?? null,
+    originRight: doc.content[idx]?.id ?? null,
   })
 }
 
@@ -69,7 +88,13 @@ function remoteInsert(doc: Doc, item: Item) {
   integrate(doc, item)
 }
 
-
+function localDelete(doc: Doc, pos: number, delLen: number) {
+  while (delLen > 0) {
+    const idx = findItemAtPos(doc, pos, false)
+    doc.content[idx].deleted = true
+    delLen--
+  }
+}
 
 const idEq = (a: Id | null, b: Id | null): boolean => (
   a == b || (a != null && b != null && a[0] === b[0] && a[1] === b[1])
@@ -195,6 +220,24 @@ function mergeInto(dest: Doc, src: Doc) {
 
     if (mergedOnThisPass === 0) throw Error('Not making progress')
   }
+
+  let srcIdx = 0, destIdx = 0
+  while (srcIdx < src.content.length) {
+    const srcItem = src.content[srcIdx]
+    let destItem = dest.content[destIdx]
+
+    while (!idEq(srcItem.id, destItem.id)) {
+      destIdx++
+      destItem = dest.content[destIdx]
+    }
+
+    if (srcItem.deleted) {
+      destItem.deleted = true
+    }
+
+    srcIdx++
+    destIdx++
+  }
 }
 
 
@@ -210,6 +253,13 @@ mergeInto(doc2, doc1)
 console.log('doc1 has content', getContent(doc1))
 console.log('doc2 has content', getContent(doc2))
 
+localDelete(doc1, 0, 1)
+console.log('doc1 has content', getContent(doc1))
+
+mergeInto(doc2, doc1)
+console.log('doc2 has content', getContent(doc2))
+
+console.table(doc2.content)
 
 
 // localInsertOne(doc1, 'seph', 0, 'a')
