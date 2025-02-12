@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Nano FugueMax</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
+  </head>
+  <body>
+    <div id="textcontainer">
+      <textarea
+        id="text1"
+        spellcheck="false"
+        placeholder="User 1 (type here)"
+      ></textarea>
+
+      <textarea
+        id="text2"
+        spellcheck="false"
+        placeholder="User 2 (type here)"
+      ></textarea>
+    </div>
+
+    <button id="pushRight">Left to right -&gt;</button>
+    <button id="pushLeft">Right to left &lt;-</button>
+    <button id="reset" onClick="reset()">Reset everything</button>
+
+    <script type="module" src="crdt.js"></script>
+    <script type="module" src="editor.js"></script>
+  </body>
+</html>

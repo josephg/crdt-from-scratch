@@ -241,25 +241,55 @@ function mergeInto(dest: Doc, src: Doc) {
 }
 
 
-const doc1 = createDoc()
-const doc2 = createDoc()
+export class CRDTDocument {
+  inner: Doc
+  agent: string
 
-localInsert(doc1, 'a', 0, 'A')
-localInsert(doc2, 'b', 0, 'B')
+  constructor(agent: string) {
+    this.inner = createDoc()
+    this.agent = agent
+  }
 
-mergeInto(doc1, doc2)
-mergeInto(doc2, doc1)
+  ins(pos: number, text: string) {
+    localInsert(this.inner, this.agent, pos, text)
+  }
 
-console.log('doc1 has content', getContent(doc1))
-console.log('doc2 has content', getContent(doc2))
+  del(pos: number, delLen: number) {
+    localDelete(this.inner, pos, delLen)
+  }
 
-localDelete(doc1, 0, 1)
-console.log('doc1 has content', getContent(doc1))
+  getString() {
+    return getContent(this.inner)
+  }
 
-mergeInto(doc2, doc1)
-console.log('doc2 has content', getContent(doc2))
+  mergeFrom(other: CRDTDocument) {
+    mergeInto(this.inner, other.inner)
+  }
 
-console.table(doc2.content)
+  reset() {
+    this.inner = createDoc()
+  }
+}
+
+// const doc1 = createDoc()
+// const doc2 = createDoc()
+
+// localInsert(doc1, 'a', 0, 'A')
+// localInsert(doc2, 'b', 0, 'B')
+
+// mergeInto(doc1, doc2)
+// mergeInto(doc2, doc1)
+
+// console.log('doc1 has content', getContent(doc1))
+// console.log('doc2 has content', getContent(doc2))
+
+// localDelete(doc1, 0, 1)
+// console.log('doc1 has content', getContent(doc1))
+
+// mergeInto(doc2, doc1)
+// console.log('doc2 has content', getContent(doc2))
+
+// console.table(doc2.content)
 
 
 // localInsertOne(doc1, 'seph', 0, 'a')
