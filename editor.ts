@@ -55,9 +55,9 @@ const attachEditor = (agentName: string, elemName: string) => {
     elem.addEventListener(eventName, e => {
       setTimeout(() => {
         // assert(vEq(doc.getLocalVersion(), last_version))
-        let newValue = elem.value
+        let newValue = elem.value.replace(/\r\n/g, '\n')
         if (newValue !== lastValue) {
-          let { pos, del, ins } = calcDiff(lastValue, newValue.replace(/\r\n/g, '\n'))
+          let { pos, del, ins } = calcDiff(lastValue, newValue)
 
           if (del > 0) doc.del(pos, del)
           if (ins !== '') doc.ins(pos, ins)
