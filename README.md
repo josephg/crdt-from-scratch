@@ -2,6 +2,8 @@
 
 I made a youtube video where I programmed up FugueMax (a text CRDT algorithm) live in front of the camera!
 
+[Watch the video of me programming this up live on youtube](https://www.youtube.com/watch?v=_lQ2Q4Kzi1I)
+
 This is the codebase after all the programming is done, including all the commits.
 
 Thanks for following along! Enjoy!
